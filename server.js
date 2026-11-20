@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const DB_PATH = path.join(DATA_DIR, 'dairy.db');
-const db = new Database(process.env.DB_PATH || path.join(__dirname, 'dairy.db'));
+const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 
 const productsTableExisted = Boolean(
