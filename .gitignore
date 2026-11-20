@@ -1,0 +1,4 @@
+node_modules/
+dairy.db
+dairy.db-shm
+dairy.db-wal

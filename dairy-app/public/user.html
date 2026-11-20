@@ -41,12 +41,19 @@
         <span>✓ Easy ordering</span>
       </div>
     </div>
+
     <div class="hero-photo">
       <img
         src="https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=1100&q=85"
         alt="Fresh milk being poured into a glass"
         loading="eager">
-      <div class="photo-note"><span>🌿</span><div><strong>Freshness for every day</strong><small>Simple goodness, delivered with care</small></div></div>
+      <div class="photo-note">
+        <span>🌿</span>
+        <div>
+          <strong>Freshness for every day</strong>
+          <small>Simple goodness, delivered with care</small>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -79,6 +86,7 @@
       </div>
       <span class="nutrition-leaf">🌱</span>
     </div>
+
     <div class="nutrition-grid">
       <article class="nutrition-card">
         <span class="nutrition-icon">🥛</span>
@@ -101,7 +109,10 @@
         <p>These are richer in fat, so enjoy suitable portions as part of a balanced eating pattern.</p>
       </article>
     </div>
-    <p class="nutrition-disclaimer">Nutrition information is general guidance, not personal medical advice. Exact values vary by product and serving size; refer to the product label.</p>
+
+    <p class="nutrition-disclaimer">
+      Nutrition information is general guidance, not personal medical advice. Exact values vary by product and serving size; refer to the product label.
+    </p>
   </section>
 
   <section class="content-section orders-section" id="orders">
@@ -127,12 +138,14 @@
           <p>Your account details in one simple place.</p>
         </div>
       </div>
+
       <div class="profile-details" id="profile-details">
         <div class="profile-detail"><small>Full name</small><strong id="profile-name">Loading...</strong></div>
         <div class="profile-detail"><small>Username</small><strong id="profile-username">—</strong></div>
         <div class="profile-detail"><small>Phone number</small><strong id="profile-phone">—</strong></div>
         <div class="profile-detail"><small>Delivery address</small><strong id="profile-address">—</strong></div>
       </div>
+
       <p class="profile-footnote">Need to change your details? Please contact the dairy owner.</p>
     </div>
   </section>
@@ -148,16 +161,23 @@
   <div class="order-bar-inner">
     <div class="cart-summary">
       <span class="cart-icon">🧺</span>
-      <div><strong id="count">No items selected</strong><small>Review your selection before ordering</small></div>
+      <div>
+        <strong id="count">No items selected</strong>
+        <small>Review your selection before ordering</small>
+      </div>
     </div>
+
     <textarea id="note" aria-label="Order note" placeholder="Add a note for the owner (optional)"></textarea>
-    <button class="btn place-order-btn" id="place" disabled>Place order <span aria-hidden="true">→</span></button>
+    <button class="btn place-order-btn" id="place" disabled>
+      Place order <span aria-hidden="true">→</span>
+    </button>
   </div>
 </div>
 
 <script src="app.js"></script>
 <script>
   requireRole('user');
+
   const $ = id => document.getElementById(id);
   const cart = {};
   let products = [];
@@ -181,57 +201,92 @@
   }
 
   function renderProducts() {
-    $('products').innerHTML = products.map(p => `
-      <article class="product-card ${cart[p.id] ? 'selected' : ''}">
+    $('products').innerHTML = products.map(product => `
+      <article class="product-card ${cart[product.id] ? 'selected' : ''}">
         <div class="product-image-wrap">
-          <img src="${photoFor(p.name)}" alt="${esc(p.name)}" loading="lazy"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">
-          <div class="product-image-fallback" aria-hidden="true">${esc(p.emoji || '🥛')}</div>
-          ${cart[p.id] ? `<span class="selected-tag">In your basket</span>` : ''}
+          <img
+            src="${photoFor(product.name)}"
+            alt="${esc(product.name)}"
+            loading="lazy"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">
+
+          <div class="product-image-fallback" aria-hidden="true">
+            ${esc(product.emoji || '🥛')}
+          </div>
+
+          ${cart[product.id] ? '<span class="selected-tag">In your basket</span>' : ''}
         </div>
+
         <div class="product-card-body">
-          <div class="product-title-row"><h3>${esc(p.name)}</h3><span class="product-emoji">${esc(p.emoji || '🥛')}</span></div>
-          <p class="product-unit">Measured per ${esc(p.unit || 'unit')}</p>
+          <div class="product-title-row">
+            <h3>${esc(product.name)}</h3>
+            <span class="product-emoji">${esc(product.emoji || '🥛')}</span>
+          </div>
+
+          <p class="product-unit">Measured per ${esc(product.unit || 'unit')}</p>
+
           <div class="product-card-bottom">
             <span class="fresh-label"><span></span> Available</span>
-            <div class="quantity-control" aria-label="Quantity for ${esc(p.name)}">
-              <button type="button" aria-label="Decrease ${esc(p.name)} quantity" onclick="change(${p.id},-1)">−</button>
-              <strong>${cart[p.id] || 0}</strong>
-              <button type="button" aria-label="Increase ${esc(p.name)} quantity" onclick="change(${p.id},1)">+</button>
+
+            <div class="quantity-control" aria-label="Quantity for ${esc(product.name)}">
+              <button type="button" aria-label="Decrease ${esc(product.name)} quantity" onclick="change(${product.id},-1)">−</button>
+              <strong>${cart[product.id] || 0}</strong>
+              <button type="button" aria-label="Increase ${esc(product.name)} quantity" onclick="change(${product.id},1)">+</button>
             </div>
           </div>
         </div>
-      </article>`).join('') || '<div class="empty">No products are available right now. Please check again soon.</div>';
+      </article>
+    `).join('') || '<div class="empty">No products are available right now. Please check again soon.</div>';
 
-    const count = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+    const count = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
     const kinds = Object.keys(cart).length;
+
     $('count').textContent = count
       ? `${count} item${count === 1 ? '' : 's'} · ${kinds} product${kinds === 1 ? '' : 's'}`
       : 'Your basket is empty';
+
     $('place').disabled = !kinds;
   }
 
   function change(id, delta) {
     const quantity = (cart[id] || 0) + delta;
-    if (quantity <= 0) delete cart[id];
-    else cart[id] = Math.min(quantity, 100);
+
+    if (quantity <= 0) {
+      delete cart[id];
+    } else {
+      cart[id] = Math.min(quantity, 100);
+    }
+
     renderProducts();
   }
 
   async function loadOrders() {
     try {
       const orders = await api('/orders/mine');
-      $('orders-list').innerHTML = orders.map(o => `
+
+      $('orders-list').innerHTML = orders.map(order => `
         <article class="order-card">
           <div class="order-card-top">
-            <div><strong>Order #${o.id}</strong><small>${fmtDate(o.created_at)}</small></div>
-            <span class="badge ${esc(o.status)}">${esc(o.status)}</span>
+            <div>
+              <strong>Order #${order.id}</strong>
+              <small>${fmtDate(order.created_at)}</small>
+            </div>
+            <span class="badge ${esc(order.status)}">${esc(order.status)}</span>
           </div>
-          <div class="order-items">${o.items.map(i => `<span>${esc(i.emoji)} ${esc(i.name)} <b>× ${i.quantity}</b></span>`).join('')}</div>
-          ${o.note ? `<p class="order-note">${esc(o.note)}</p>` : ''}
-        </article>`).join('') || '<div class="empty orders-empty">Your order history will appear here after your first order.</div>';
+
+          <div class="order-items">
+            ${order.items.map(item => `
+              <span>${esc(item.emoji)} ${esc(item.name)} <b>× ${item.quantity}</b></span>
+            `).join('')}
+          </div>
+
+          ${order.note ? `<p class="order-note">${esc(order.note)}</p>` : ''}
+        </article>
+      `).join('') || '<div class="empty orders-empty">Your order history will appear here after your first order.</div>';
+
     } catch (error) {
-      $('orders-list').innerHTML = '<div class="empty">We could not load your orders. Please refresh the page.</div>';
+      $('orders-list').innerHTML =
+        '<div class="empty">We could not load your orders. Please refresh the page.</div>';
     }
   }
 
@@ -239,14 +294,17 @@
     try {
       const profile = await api('/profile');
       const name = profile.name || sessionStorage.getItem('name') || 'Customer';
+
       $('who').textContent = name.split(' ')[0];
       $('profile-avatar').textContent = name.trim().charAt(0).toUpperCase();
       $('profile-name').textContent = name;
       $('profile-username').textContent = profile.username ? '@' + profile.username : '—';
       $('profile-phone').textContent = profile.phone || 'Not added';
       $('profile-address').textContent = profile.address || 'Not added';
+
     } catch (error) {
       const name = sessionStorage.getItem('name') || 'Customer';
+
       $('who').textContent = name.split(' ')[0];
       $('profile-avatar').textContent = name.trim().charAt(0).toUpperCase();
       $('profile-name').textContent = name;
@@ -255,22 +313,28 @@
 
   $('place').onclick = async () => {
     $('place').disabled = true;
+
     try {
       await api('/orders', {
         method: 'POST',
         body: {
           items: Object.entries(cart).map(([product_id, quantity]) => ({
-            product_id: Number(product_id), quantity
+            product_id: Number(product_id),
+            quantity
           })),
           note: $('note').value
         }
       });
+
       Object.keys(cart).forEach(key => delete cart[key]);
       $('note').value = '';
+
       toast('Your order has been sent to the owner!');
+
       renderProducts();
       await loadOrders();
       location.hash = '#orders';
+
     } catch (error) {
       toast(error.message, true);
       renderProducts();
@@ -283,10 +347,18 @@
     try {
       products = await api('/products');
       renderProducts();
-      await Promise.all([loadProfile(), loadOrders()]);
+
+      await Promise.all([
+        loadProfile(),
+        loadOrders()
+      ]);
+
       setInterval(loadOrders, 15000);
+
     } catch (error) {
-      $('products').innerHTML = '<div class="empty">Could not load products. Please refresh the page.</div>';
+      $('products').innerHTML =
+        '<div class="empty">Could not load products. Please refresh the page.</div>';
+
       toast(error.message, true);
     }
   })();

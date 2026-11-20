@@ -3,14 +3,32 @@ const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(express.json());
+
+// Prevent browsers/proxies from serving stale API data after product changes.
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------- Database ----------
-const db = new Database(path.join(__dirname, 'dairy.db'));
+// On Render, create a persistent disk mounted at /var/data and set DATA_DIR=/var/data.
+// Locally, the database remains in this project folder by default.
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+fs.mkdirSync(DATA_DIR, { recursive: true });
+const DB_PATH = path.join(DATA_DIR, 'dairy.db');
+const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
+
+const productsTableExisted = Boolean(
+  db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='products'").get()
+);
+
 db.exec(`
 CREATE TABLE IF NOT EXISTS users(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,17 +63,32 @@ CREATE TABLE IF NOT EXISTS order_items(
 );
 `);
 
-// Seed owner account (passwords are stored hashed, never in plain text)
+// Preserve product details in order history after permanent deletion.
+const orderItemColumns = db.prepare('PRAGMA table_info(order_items)').all().map(column => column.name);
+if (!orderItemColumns.includes('product_name')) db.exec('ALTER TABLE order_items ADD COLUMN product_name TEXT');
+if (!orderItemColumns.includes('product_unit')) db.exec('ALTER TABLE order_items ADD COLUMN product_unit TEXT');
+if (!orderItemColumns.includes('product_emoji')) db.exec('ALTER TABLE order_items ADD COLUMN product_emoji TEXT');
+
+db.exec(`
+  UPDATE order_items
+  SET product_name = COALESCE(product_name, (SELECT name FROM products WHERE products.id = order_items.product_id)),
+      product_unit = COALESCE(product_unit, (SELECT unit FROM products WHERE products.id = order_items.product_id)),
+      product_emoji = COALESCE(product_emoji, (SELECT emoji FROM products WHERE products.id = order_items.product_id))
+  WHERE product_name IS NULL OR product_unit IS NULL OR product_emoji IS NULL;
+`);
+
+// Seed owner account. Passwords are stored hashed.
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
+
 if (!db.prepare("SELECT 1 FROM users WHERE role='admin'").get()) {
   db.prepare("INSERT INTO users(name,username,password_hash,role) VALUES('Owner',?,?,'admin')")
     .run(ADMIN_USER, bcrypt.hashSync(ADMIN_PASS, 10));
-  console.log(`Owner account created -> username: ${ADMIN_USER}  password: ${ADMIN_PASS}`);
+  console.log(`Owner account created for username: ${ADMIN_USER}.`);
 }
 
-// Seed core dairy products (no prices)
-if (!db.prepare('SELECT 1 FROM products').get()) {
+// Seed products only when the products table is first created.
+if (!productsTableExisted) {
   const ins = db.prepare('INSERT INTO products(name,unit,emoji) VALUES(?,?,?)');
   [
     ['Fresh Milk', 'Litre', '🥛'],
@@ -66,44 +99,68 @@ if (!db.prepare('SELECT 1 FROM products').get()) {
     ['Cheese', 'Kg', '🧀'],
     ['Buttermilk', 'Litre', '🥛'],
     ['Cream', 'Litre', '🍦'],
-    ['Lassi', 'Litre', '🥤'],
-  ].forEach(p => ins.run(...p));
+    ['Lassi', 'Litre', '🥤']
+  ].forEach(product => ins.run(...product));
 }
 
-// ---------- Auth (simple in-memory sessions) ----------
+// ---------- Authentication ----------
 const sessions = new Map();
 
 function auth(role) {
   return (req, res, next) => {
     const token = (req.headers.authorization || '').replace('Bearer ', '') || req.query.token;
-    const s = sessions.get(token);
-    if (!s) return res.status(401).json({ error: 'Please log in' });
-    if (role && s.role !== role) return res.status(403).json({ error: 'Not allowed' });
-    req.user = s;
+    const session = sessions.get(token);
+
+    if (!session) return res.status(401).json({ error: 'Please log in' });
+    if (role && session.role !== role) return res.status(403).json({ error: 'Not allowed' });
+
+    req.user = session;
     next();
   };
 }
 
 app.post('/api/register', (req, res) => {
   const { name, username, phone, address, password } = req.body || {};
-  if (!name || !username || !password) return res.status(400).json({ error: 'Name, username and password are required' });
-  if (username.trim().length < 3) return res.status(400).json({ error: 'Username must be at least 3 characters' });
-  if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
-  if (db.prepare('SELECT 1 FROM users WHERE username=?').get(username.trim().toLowerCase()))
+
+  if (!name || !username || !password) {
+    return res.status(400).json({ error: 'Name, username and password are required' });
+  }
+  if (username.trim().length < 3) {
+    return res.status(400).json({ error: 'Username must be at least 3 characters' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+
+  if (db.prepare('SELECT 1 FROM users WHERE username=?').get(username.trim().toLowerCase())) {
     return res.status(400).json({ error: 'Username already taken' });
+  }
+
   db.prepare("INSERT INTO users(name,username,phone,address,password_hash,role) VALUES(?,?,?,?,?,'user')")
-    .run(name.trim(), username.trim().toLowerCase(), (phone || '').trim(), (address || '').trim(), bcrypt.hashSync(password, 10));
+    .run(
+      name.trim(),
+      username.trim().toLowerCase(),
+      (phone || '').trim(),
+      (address || '').trim(),
+      bcrypt.hashSync(password, 10)
+    );
+
   res.json({ ok: true });
 });
 
 app.post('/api/login', (req, res) => {
   const { username, password, role } = req.body || {};
-  const u = db.prepare('SELECT * FROM users WHERE username=?').get((username || '').trim().toLowerCase());
-  if (!u || !bcrypt.compareSync(password || '', u.password_hash) || (role && u.role !== role))
+  const user = db.prepare('SELECT * FROM users WHERE username=?')
+    .get((username || '').trim().toLowerCase());
+
+  if (!user || !bcrypt.compareSync(password || '', user.password_hash) || (role && user.role !== role)) {
     return res.status(400).json({ error: 'Invalid username or password' });
+  }
+
   const token = crypto.randomBytes(24).toString('hex');
-  sessions.set(token, { id: u.id, role: u.role, name: u.name });
-  res.json({ token, role: u.role, name: u.name });
+  sessions.set(token, { id: user.id, role: user.role, name: user.name });
+
+  res.json({ token, role: user.role, name: user.name });
 });
 
 app.post('/api/logout', auth(), (req, res) => {
@@ -111,17 +168,21 @@ app.post('/api/logout', auth(), (req, res) => {
   res.json({ ok: true });
 });
 
-
 // ---------- Customer profile ----------
 app.get('/api/profile', auth('user'), (req, res) => {
   const user = db.prepare(
     'SELECT name, username, phone, address, created_at FROM users WHERE id=?'
   ).get(req.user.id);
+
   if (!user) return res.status(404).json({ error: 'Profile not found' });
   res.json(user);
 });
 
 // ---------- Products ----------
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, build: 'hard-delete-v2-2026-11-21' });
+});
+
 app.get('/api/products', auth(), (req, res) => {
   const where = req.user.role === 'admin' ? '' : 'WHERE available=1';
   res.json(db.prepare(`SELECT * FROM products ${where} ORDER BY id`).all());
@@ -129,7 +190,11 @@ app.get('/api/products', auth(), (req, res) => {
 
 app.post('/api/admin/products', auth('admin'), (req, res) => {
   const { name, unit, emoji } = req.body || {};
-  if (!name || !name.trim()) return res.status(400).json({ error: 'Product name required' });
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Product name required' });
+  }
+
   try {
     db.prepare('INSERT INTO products(name,unit,emoji) VALUES(?,?,?)')
       .run(name.trim(), (unit || 'Kg').trim(), (emoji || '🥛').trim());
@@ -140,63 +205,158 @@ app.post('/api/admin/products', auth('admin'), (req, res) => {
 });
 
 app.patch('/api/admin/products/:id', auth('admin'), (req, res) => {
-  db.prepare('UPDATE products SET available=? WHERE id=?').run(req.body.available ? 1 : 0, req.params.id);
+  db.prepare('UPDATE products SET available=? WHERE id=?')
+    .run(req.body.available ? 1 : 0, req.params.id);
   res.json({ ok: true });
 });
 
+// Permanently delete a product while preserving historical order details.
 app.delete('/api/admin/products/:id', auth('admin'), (req, res) => {
-  if (db.prepare('SELECT 1 FROM order_items WHERE product_id=?').get(req.params.id)) {
-    db.prepare('UPDATE products SET available=0 WHERE id=?').run(req.params.id);
-    return res.json({ ok: true, note: 'Has past orders, so it was hidden instead of deleted' });
+  const productId = Number(req.params.id);
+
+  if (!Number.isInteger(productId) || productId < 1) {
+    return res.status(400).json({ error: 'Invalid product ID' });
   }
-  db.prepare('DELETE FROM products WHERE id=?').run(req.params.id);
-  res.json({ ok: true });
+
+  try {
+    const removeProduct = db.transaction(() => {
+      const product = db.prepare('SELECT name, unit, emoji FROM products WHERE id=?').get(productId);
+      if (!product) return false;
+
+      db.prepare(`
+        UPDATE order_items
+        SET product_name = COALESCE(product_name, ?),
+            product_unit = COALESCE(product_unit, ?),
+            product_emoji = COALESCE(product_emoji, ?)
+        WHERE product_id=?
+      `).run(product.name, product.unit || '', product.emoji || '🥛', productId);
+
+      db.prepare('DELETE FROM products WHERE id=?').run(productId);
+      return true;
+    });
+
+    const deleted = removeProduct();
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    res.json({
+      ok: true,
+      message: 'Product permanently deleted. Past orders are preserved.'
+    });
+  } catch (error) {
+    console.error('Product deletion failed:', error);
+    res.status(500).json({
+      error: 'Could not permanently delete product. Check server logs.'
+    });
+  }
 });
 
 // ---------- Orders ----------
 function orderList(where, params) {
   const orders = db.prepare(`
     SELECT o.*, u.name AS customer, u.phone, u.address
-    FROM orders o JOIN users u ON u.id=o.user_id ${where} ORDER BY o.id DESC`).all(...params);
+    FROM orders o
+    JOIN users u ON u.id=o.user_id
+    ${where}
+    ORDER BY o.id DESC
+  `).all(...params);
+
   const itemStmt = db.prepare(`
-    SELECT p.name, p.unit, p.emoji, i.quantity
-    FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=?`);
-  orders.forEach(o => (o.items = itemStmt.all(o.id)));
+    SELECT COALESCE(i.product_name, p.name, 'Deleted product') AS name,
+           COALESCE(i.product_unit, p.unit, '') AS unit,
+           COALESCE(i.product_emoji, p.emoji, '🥛') AS emoji,
+           i.quantity
+    FROM order_items i
+    LEFT JOIN products p ON p.id=i.product_id
+    WHERE i.order_id=?
+  `);
+
+  orders.forEach(order => {
+    order.items = itemStmt.all(order.id);
+  });
+
   return orders;
 }
 
-// Admin live notifications (Server-Sent Events)
+// ---------- Admin live notifications ----------
 const adminClients = new Set();
+
 app.get('/api/admin/stream', auth('admin'), (req, res) => {
-  res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive'
+  });
+
   res.flushHeaders();
   res.write('retry: 3000\n\n');
   adminClients.add(res);
+
   const ping = setInterval(() => res.write(': ping\n\n'), 25000);
-  req.on('close', () => { clearInterval(ping); adminClients.delete(res); });
+
+  req.on('close', () => {
+    clearInterval(ping);
+    adminClients.delete(res);
+  });
 });
 
+// ---------- Create order ----------
 app.post('/api/orders', auth('user'), (req, res) => {
   const { items, note } = req.body || {};
-  if (!Array.isArray(items) || !items.length) return res.status(400).json({ error: 'Select at least one product' });
+
+  if (!Array.isArray(items) || !items.length) {
+    return res.status(400).json({ error: 'Select at least one product' });
+  }
+
   const find = db.prepare('SELECT id FROM products WHERE id=? AND available=1');
   const clean = [];
-  for (const it of items) {
-    const qty = Number(it.quantity);
-    if (!find.get(it.product_id) || !Number.isInteger(qty) || qty < 1 || qty > 100)
+
+  for (const item of items) {
+    const quantity = Number(item.quantity);
+
+    if (
+      !find.get(item.product_id) ||
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      quantity > 100
+    ) {
       return res.status(400).json({ error: 'Invalid product or quantity' });
-    clean.push({ product_id: it.product_id, quantity: qty });
+    }
+
+    clean.push({ product_id: item.product_id, quantity });
   }
+
   const create = db.transaction(() => {
-    const { lastInsertRowid } = db.prepare('INSERT INTO orders(user_id,note) VALUES(?,?)')
-      .run(req.user.id, (note || '').slice(0, 500));
-    const ins = db.prepare('INSERT INTO order_items(order_id,product_id,quantity) VALUES(?,?,?)');
-    clean.forEach(c => ins.run(lastInsertRowid, c.product_id, c.quantity));
+    const { lastInsertRowid } = db.prepare(
+      'INSERT INTO orders(user_id,note) VALUES(?,?)'
+    ).run(req.user.id, (note || '').slice(0, 500));
+
+    const insertItem = db.prepare(`
+      INSERT INTO order_items(
+        order_id, product_id, quantity,
+        product_name, product_unit, product_emoji
+      )
+      SELECT ?, id, ?, name, unit, emoji
+      FROM products
+      WHERE id=?
+    `);
+
+    clean.forEach(item => {
+      insertItem.run(lastInsertRowid, item.quantity, item.product_id);
+    });
+
     return lastInsertRowid;
   });
+
   const id = create();
   const order = orderList('WHERE o.id=?', [id])[0];
-  adminClients.forEach(c => c.write(`event: order\ndata: ${JSON.stringify(order)}\n\n`));
+
+  adminClients.forEach(client => {
+    client.write(`event: order\ndata: ${JSON.stringify(order)}\n\n`);
+  });
+
   res.json({ ok: true, id });
 });
 
@@ -209,9 +369,15 @@ app.get('/api/admin/orders', auth('admin'), (req, res) => {
 });
 
 const STATUSES = ['Pending', 'Accepted', 'Delivered', 'Cancelled'];
+
 app.patch('/api/admin/orders/:id', auth('admin'), (req, res) => {
-  if (!STATUSES.includes(req.body.status)) return res.status(400).json({ error: 'Invalid status' });
-  db.prepare('UPDATE orders SET status=?, seen=1 WHERE id=?').run(req.body.status, req.params.id);
+  if (!STATUSES.includes(req.body.status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+
+  db.prepare('UPDATE orders SET status=?, seen=1 WHERE id=?')
+    .run(req.body.status, req.params.id);
+
   res.json({ ok: true });
 });
 
@@ -220,5 +386,11 @@ app.post('/api/admin/orders/seen', auth('admin'), (req, res) => {
   res.json({ ok: true });
 });
 
+// ---------- Start server ----------
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Dairy app running at http://localhost:${PORT}`));
+
+app.listen(PORT, () => {
+  console.log(`Dairy app running on port ${PORT}.`);
+  console.log(`SQLite database file: ${DB_PATH}`);
+  console.log(`Persistent DATA_DIR configured: ${Boolean(process.env.DATA_DIR)}`);
+});

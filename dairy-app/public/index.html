@@ -28,26 +28,33 @@
         <label>Delivery address</label>
         <textarea id="address" rows="2"></textarea>
       </div>
+
       <label>Username</label>
       <input id="username" autocomplete="username" required>
+
       <label>Password</label>
       <input id="password" type="password" autocomplete="current-password" required>
+
       <button class="btn full" id="submit" type="submit">Login</button>
     </form>
 
     <div class="switch" id="switchBox">
-      <span id="switchText">New customer?</span> <a id="switchLink">Create account</a>
+      <span id="switchText">New customer?</span>
+      <a id="switchLink">Create account</a>
     </div>
   </div>
 </div>
 
 <script src="app.js"></script>
 <script>
-  let role = 'user', registering = false;
+  let role = 'user';
+  let registering = false;
   const $ = id => document.getElementById(id);
 
   if (sessionStorage.getItem('token')) {
-    location.href = sessionStorage.getItem('role') === 'admin' ? 'admin.html' : 'user.html';
+    location.href = sessionStorage.getItem('role') === 'admin'
+      ? 'admin.html'
+      : 'user.html';
   }
 
   function refresh() {
@@ -55,32 +62,70 @@
     $('tabAdmin').classList.toggle('active', role === 'admin');
     $('switchBox').classList.toggle('hidden', role === 'admin');
     $('regFields').classList.toggle('hidden', !registering);
+
     $('submit').textContent = registering ? 'Create account' : 'Login';
-    $('switchText').textContent = registering ? 'Already have an account?' : 'New customer?';
+    $('switchText').textContent = registering
+      ? 'Already have an account?'
+      : 'New customer?';
+
     $('switchLink').textContent = registering ? 'Login' : 'Create account';
     $('password').autocomplete = registering ? 'new-password' : 'current-password';
   }
 
-  $('tabUser').onclick = () => { role = 'user'; refresh(); };
-  $('tabAdmin').onclick = () => { role = 'admin'; registering = false; refresh(); };
-  $('switchLink').onclick = () => { registering = !registering; refresh(); };
+  $('tabUser').onclick = () => {
+    role = 'user';
+    refresh();
+  };
 
-  $('form').onsubmit = async e => {
-    e.preventDefault();
-    const username = $('username').value, password = $('password').value;
+  $('tabAdmin').onclick = () => {
+    role = 'admin';
+    registering = false;
+    refresh();
+  };
+
+  $('switchLink').onclick = () => {
+    registering = !registering;
+    refresh();
+  };
+
+  $('form').onsubmit = async event => {
+    event.preventDefault();
+
+    const username = $('username').value;
+    const password = $('password').value;
+
     try {
       if (registering) {
-        await api('/register', { method: 'POST', body: {
-          name: $('name').value, phone: $('phone').value, address: $('address').value, username, password } });
+        await api('/register', {
+          method: 'POST',
+          body: {
+            name: $('name').value,
+            phone: $('phone').value,
+            address: $('address').value,
+            username,
+            password
+          }
+        });
+
         toast('Account created. Logging you in...');
       }
-      const d = await api('/login', { method: 'POST', body: { username, password, role } });
-      sessionStorage.setItem('token', d.token);
-      sessionStorage.setItem('role', d.role);
-      sessionStorage.setItem('name', d.name);
-      location.href = d.role === 'admin' ? 'admin.html' : 'user.html';
-    } catch (err) { toast(err.message, true); }
+
+      const data = await api('/login', {
+        method: 'POST',
+        body: { username, password, role }
+      });
+
+      sessionStorage.setItem('token', data.token);
+      sessionStorage.setItem('role', data.role);
+      sessionStorage.setItem('name', data.name);
+
+      location.href = data.role === 'admin' ? 'admin.html' : 'user.html';
+
+    } catch (err) {
+      toast(err.message, true);
+    }
   };
+
   refresh();
 </script>
 </body>
