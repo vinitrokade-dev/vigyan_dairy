@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vigyan Dairy Products - Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="card auth-card">
+    <div class="brand">
+      <img class="auth-logo" src="/vigyan-dairy-logo.png" alt="Vigyan Dairy Products logo">
+      <p>Fresh dairy, straight from the farm</p>
+    </div>
+
+    <div class="tabs">
+      <button id="tabUser" class="active" type="button">Customer</button>
+      <button id="tabAdmin" type="button">Owner</button>
+    </div>
+
+    <form id="form">
+      <div id="regFields" class="hidden">
+        <label>Full name</label>
+        <input id="name" autocomplete="name">
+        <label>Phone</label>
+        <input id="phone" type="tel" autocomplete="tel">
+        <label>Delivery address</label>
+        <textarea id="address" rows="2"></textarea>
+      </div>
+      <label>Username</label>
+      <input id="username" autocomplete="username" required>
+      <label>Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button class="btn full" id="submit" type="submit">Login</button>
+    </form>
+
+    <div class="switch" id="switchBox">
+      <span id="switchText">New customer?</span> <a id="switchLink">Create account</a>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  let role = 'user', registering = false;
+  const $ = id => document.getElementById(id);
+
+  if (sessionStorage.getItem('token')) {
+    location.href = sessionStorage.getItem('role') === 'admin' ? 'admin.html' : 'user.html';
+  }
+
+  function refresh() {
+    $('tabUser').classList.toggle('active', role === 'user');
+    $('tabAdmin').classList.toggle('active', role === 'admin');
+    $('switchBox').classList.toggle('hidden', role === 'admin');
+    $('regFields').classList.toggle('hidden', !registering);
+    $('submit').textContent = registering ? 'Create account' : 'Login';
+    $('switchText').textContent = registering ? 'Already have an account?' : 'New customer?';
+    $('switchLink').textContent = registering ? 'Login' : 'Create account';
+    $('password').autocomplete = registering ? 'new-password' : 'current-password';
+  }
+
+  $('tabUser').onclick = () => { role = 'user'; refresh(); };
+  $('tabAdmin').onclick = () => { role = 'admin'; registering = false; refresh(); };
+  $('switchLink').onclick = () => { registering = !registering; refresh(); };
+
+  $('form').onsubmit = async e => {
+    e.preventDefault();
+    const username = $('username').value, password = $('password').value;
+    try {
+      if (registering) {
+        await api('/register', { method: 'POST', body: {
+          name: $('name').value, phone: $('phone').value, address: $('address').value, username, password } });
+        toast('Account created. Logging you in...');
+      }
+      const d = await api('/login', { method: 'POST', body: { username, password, role } });
+      sessionStorage.setItem('token', d.token);
+      sessionStorage.setItem('role', d.role);
+      sessionStorage.setItem('name', d.name);
+      location.href = d.role === 'admin' ? 'admin.html' : 'user.html';
+    } catch (err) { toast(err.message, true); }
+  };
+  refresh();
+</script>
+</body>
+</html>
