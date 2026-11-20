@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vigyan Dairy Products - Owner Panel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="admin-brand"><img src="/vigyan-dairy-logo.png" alt="Vigyan Dairy Products"><h1>Owner Panel</h1></div>
+  <div class="right">
+    <button class="bell" id="bell" title="Mark all as seen">🔔<span class="count hidden" id="badge">0</span></button>
+    <button class="btn ghost small" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="admin-tabs">
+    <button id="tOrders" class="active">Orders</button>
+    <button id="tProducts">Products</button>
+  </div>
+
+  <div id="pOrders">
+    <div class="row" style="margin-bottom:14px">
+      <div style="max-width:220px">
+        <select id="filter">
+          <option value="">All orders</option>
+          <option>Pending</option><option>Accepted</option><option>Delivered</option><option>Cancelled</option>
+        </select>
+      </div>
+    </div>
+    <div id="orders"></div>
+  </div>
+
+  <div id="pProducts" class="hidden">
+    <div class="card" style="margin-bottom:16px">
+      <h2>Add product</h2>
+      <form id="addForm" class="row">
+        <div><label>Name</label><input id="pname" required></div>
+        <div><label>Unit (Kg, Litre...)</label><input id="punit" value="Kg"></div>
+        <div style="max-width:90px"><label>Emoji</label><input id="pemoji" value="🥛"></div>
+        <div style="flex:0"><button class="btn" type="submit">Add</button></div>
+      </form>
+    </div>
+    <div class="card plist" id="plist"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  requireRole('admin');
+  const $ = id => document.getElementById(id);
+  let orders = [];
+
+  // ----- Tabs -----
+  function showTab(t) {
+    $('pOrders').classList.toggle('hidden', t !== 'orders');
+    $('pProducts').classList.toggle('hidden', t !== 'products');
+    $('tOrders').classList.toggle('active', t === 'orders');
+    $('tProducts').classList.toggle('active', t === 'products');
+    if (t === 'products') loadProducts();
+  }
+  $('tOrders').onclick = () => showTab('orders');
+  $('tProducts').onclick = () => showTab('products');
+
+  // ----- Orders -----
+  async function loadOrders() {
+    orders = await api('/admin/orders');
+    renderOrders();
+  }
+
+  function renderOrders() {
+    const f = $('filter').value;
+    const list = orders.filter(o => !f || o.status === f);
+    const unseen = orders.filter(o => !o.seen).length;
+    $('badge').textContent = unseen;
+    $('badge').classList.toggle('hidden', !unseen);
+    document.title = (unseen ? `(${unseen}) ` : '') + 'Owner Panel';
+
+    $('orders').innerHTML = list.map(o => `
+      <div class="card order ${o.seen ? '' : 'new'}">
+        <div class="head">
+          <div><strong>Order #${o.id}</strong>${o.seen ? '' : '<span class="new-tag">NEW</span>'}</div>
+          <span class="badge ${o.status}">${o.status}</span>
+        </div>
+        <div class="meta">${esc(o.customer)} · ${esc(o.phone || 'no phone')} · ${fmtDate(o.created_at)}</div>
+        <div class="meta">📍 ${esc(o.address || 'no address given')}</div>
+        <ul>${o.items.map(i => `<li>${esc(i.emoji)} ${esc(i.name)} × ${i.quantity} ${esc(i.unit)}</li>`).join('')}</ul>
+        ${o.note ? `<div class="note">${esc(o.note)}</div>` : ''}
+        <div class="actions">
+          ${o.status === 'Pending' ? `<button class="btn small" onclick="setStatus(${o.id},'Accepted')">Accept</button>` : ''}
+          ${o.status === 'Accepted' ? `<button class="btn small" onclick="setStatus(${o.id},'Delivered')">Mark delivered</button>` : ''}
+          ${['Pending', 'Accepted'].includes(o.status) ? `<button class="btn small danger" onclick="setStatus(${o.id},'Cancelled')">Cancel</button>` : ''}
+        </div>
+      </div>`).join('') || '<div class="empty">No orders to show.</div>';
+  }
+
+  async function setStatus(id, status) {
+    try { await api('/admin/orders/' + id, { method: 'PATCH', body: { status } }); loadOrders(); }
+    catch (e) { toast(e.message, true); }
+  }
+
+  $('filter').onchange = renderOrders;
+  $('bell').onclick = async () => { await api('/admin/orders/seen', { method: 'POST' }); loadOrders(); };
+
+  // ----- Products -----
+  async function loadProducts() {
+    const ps = await api('/products');
+    $('plist').innerHTML = ps.map(p => `
+      <div class="item">
+        <div>${esc(p.emoji)} <strong>${esc(p.name)}</strong> <span class="meta">per ${esc(p.unit)}</span>
+          ${p.available ? '' : '<span class="badge Cancelled">Hidden</span>'}</div>
+        <div>
+          <button class="btn ghost small" onclick="toggleP(${p.id},${p.available ? 0 : 1})">${p.available ? 'Hide' : 'Show'}</button>
+          <button class="btn danger small" onclick="delP(${p.id})">Delete</button>
+        </div>
+      </div>`).join('');
+  }
+  async function toggleP(id, available) {
+    await api('/admin/products/' + id, { method: 'PATCH', body: { available } }); loadProducts();
+  }
+  async function delP(id) {
+    if (!confirm('Permanently delete this product from the product list? Existing order history will be preserved.')) return;
+    try {
+      const d = await api('/admin/products/' + id, { method: 'DELETE' });
+      toast(d.message || 'Product permanently deleted');
+      loadProducts();
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+  $('addForm').onsubmit = async e => {
+    e.preventDefault();
+    try {
+      await api('/admin/products', { method: 'POST', body: {
+        name: $('pname').value, unit: $('punit').value, emoji: $('pemoji').value } });
+      $('pname').value = '';
+      loadProducts();
+    } catch (err) { toast(err.message, true); }
+  };
+
+  // ----- Live notifications -----
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880; g.gain.value = 0.15;
+      o.start(); o.stop(ctx.currentTime + 0.25);
+    } catch {}
+  }
+
+  function connectStream() {
+    const es = new EventSource('/api/admin/stream?token=' + sessionStorage.getItem('token'));
+    es.addEventListener('order', ev => {
+      const o = JSON.parse(ev.data);
+      const summary = o.items.map(i => `${i.name} × ${i.quantity}`).join(', ');
+      toast(`New order from ${o.customer}: ${summary}`);
+      beep();
+      if ('Notification' in window && Notification.permission === 'granted')
+        new Notification('New dairy order', { body: `${o.customer}: ${summary}` });
+      loadOrders();
+    });
+  }
+
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  loadOrders();
+  connectStream();
+</script>
+</body>
+</html>
