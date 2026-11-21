@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,248 +7,507 @@
   <meta name="theme-color" content="#245b43">
   <title>Vigyan Dairy Products | Fresh Dairy</title>
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    .product-number {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 2;
+      background: #245b43;
+      color: white;
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .product-image-wrap {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-image-wrap img {
+      width: 100%;
+      height: 190px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .product-image-fallback {
+      display: none;
+      width: 100%;
+      height: 190px;
+      place-items: center;
+      font-size: 65px;
+      background: #f3f5ed;
+    }
+
+    .product-card {
+      overflow: hidden;
+    }
+  </style>
 </head>
+
 <body class="customer-page">
+
 <header class="site-header">
   <nav class="navbar" aria-label="Main navigation">
-    <a class="brand-lockup" href="#home" aria-label="Vigyan Dairy Products home">
-      <img class="brand-logo" src="/vigyan-dairy-logo.png" alt="Vigyan Dairy Products">
+    <a class="brand-lockup" href="#home">
+      <img class="brand-logo"
+           src="/vigyan-dairy-logo.png"
+           alt="Vigyan Dairy Products">
     </a>
 
     <div class="nav-links">
       <a class="active" href="#home">Home</a>
       <a href="#shop">Shop</a>
-      <a href="#nutrition">Nutrition</a>
       <a href="#orders">My Orders</a>
       <a href="#profile">Profile</a>
     </div>
 
     <div class="nav-actions">
-      <span class="welcome-user">Hi, <strong id="who">there</strong></span>
-      <button class="btn logout-btn" onclick="logout()" type="button">Logout</button>
+      <span class="welcome-user">
+        Hi, <strong id="who">there</strong>
+      </span>
+      <button class="btn logout-btn"
+              onclick="logout()"
+              type="button">
+        Logout
+      </button>
     </div>
   </nav>
 </header>
 
 <main>
+
+  <!-- HOME HERO -->
   <section class="welcome-hero" id="home">
     <div class="hero-copy">
       <span class="eyebrow">FRESH • SIMPLE • EVERYDAY</span>
-      <h1>A little goodness<br>in every <span>day.</span></h1>
-      <p>Your everyday dairy essentials, selected with care and delivered fresh from our dairy to your home.</p>
-      <a class="btn hero-btn" href="#shop">Explore products <span aria-hidden="true">→</span></a>
+
+      <h1>
+        A little goodness<br>
+        in every <span>day.</span>
+      </h1>
+
+      <p>
+        From fresh milk to delicious dairy sweets,
+        discover your everyday favourites at Vigyan Dairy Products.
+      </p>
+
+      <a class="btn hero-btn" href="#shop">
+        Explore products →
+      </a>
+
       <div class="hero-points">
-        <span>✓ Fresh dairy essentials</span>
-        <span>✓ Easy ordering</span>
+        <span>✓ Fresh dairy products</span>
+        <span>✓ Easy online ordering</span>
       </div>
     </div>
 
     <div class="hero-photo">
       <img
         src="https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=1100&q=85"
-        alt="Fresh milk being poured into a glass"
+        alt="Fresh milk"
         loading="eager">
+
       <div class="photo-note">
-        <span>🌿</span>
+        <span>🥛</span>
         <div>
           <strong>Freshness for every day</strong>
-          <small>Simple goodness, delivered with care</small>
+          <small>Goodness in every serving</small>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="benefit-row" aria-label="Shopping benefits">
-    <div><span>🥛</span><p><strong>Everyday essentials</strong><small>Your dairy favourites in one place</small></p></div>
-    <div><span>🧺</span><p><strong>Easy ordering</strong><small>Choose products and quantities</small></p></div>
-    <div><span>🤍</span><p><strong>Made convenient</strong><small>Track your order updates here</small></p></div>
+  <!-- BENEFITS -->
+  <section class="benefit-row">
+    <div>
+      <span>🥛</span>
+      <p>
+        <strong>Fresh dairy</strong>
+        <small>Everyday essentials</small>
+      </p>
+    </div>
+
+    <div>
+      <span>🧺</span>
+      <p>
+        <strong>Easy ordering</strong>
+        <small>Choose your quantity</small>
+      </p>
+    </div>
+
+    <div>
+      <span>🤍</span>
+      <p>
+        <strong>Order tracking</strong>
+        <small>Check order updates</small>
+      </p>
+    </div>
   </section>
 
+  <!-- PRODUCTS -->
   <section class="content-section shop-section" id="shop">
     <div class="section-heading">
       <div>
-        <span class="eyebrow">FROM OUR DAIRY TO YOU</span>
-        <h2>Shop dairy favourites</h2>
-        <p>Choose what you need and set the quantity with the simple controls.</p>
+        <span class="eyebrow">OUR PRODUCTS</span>
+        <h2>Explore our dairy collection</h2>
+        <p>
+          Fresh milk, beverages, dairy sweets and much more.
+          Select your products below.
+        </p>
       </div>
-      <span class="section-side-note">Fresh picks for your home</span>
+
+      <span class="section-side-note">
+        19 products available
+      </span>
     </div>
+
     <div class="product-grid" id="products">
-      <div class="loading-state">Loading fresh products...</div>
+      <div class="loading-state">Loading products...</div>
     </div>
   </section>
 
-  <section class="nutrition-section" id="nutrition">
-    <div class="section-heading nutrition-heading">
-      <div>
-        <span class="eyebrow">A LITTLE FOOD FOR THOUGHT</span>
-        <h2>Know your dairy</h2>
-        <p>Small, useful nutrition notes to help you make informed choices.</p>
-      </div>
-      <span class="nutrition-leaf">🌱</span>
-    </div>
-
-    <div class="nutrition-grid">
-      <article class="nutrition-card">
-        <span class="nutrition-icon">🥛</span>
-        <h3>Milk</h3>
-        <p>Milk naturally provides protein and calcium. Check the label for the nutrition details of your chosen variety.</p>
-      </article>
-      <article class="nutrition-card">
-        <span class="nutrition-icon">🥣</span>
-        <h3>Curd &amp; lassi</h3>
-        <p>Enjoy them as part of a varied diet. Unsweetened options can help you keep track of added sugar.</p>
-      </article>
-      <article class="nutrition-card">
-        <span class="nutrition-icon">🧀</span>
-        <h3>Paneer &amp; cheese</h3>
-        <p>These dairy foods provide protein. Portion size and the product's salt and fat content can vary.</p>
-      </article>
-      <article class="nutrition-card">
-        <span class="nutrition-icon">🧈</span>
-        <h3>Butter, ghee &amp; cream</h3>
-        <p>These are richer in fat, so enjoy suitable portions as part of a balanced eating pattern.</p>
-      </article>
-    </div>
-
-    <p class="nutrition-disclaimer">
-      Nutrition information is general guidance, not personal medical advice. Exact values vary by product and serving size; refer to the product label.
-    </p>
-  </section>
-
+  <!-- ORDERS -->
   <section class="content-section orders-section" id="orders">
     <div class="section-heading">
       <div>
         <span class="eyebrow">YOUR DAIRY ACTIVITY</span>
-        <h2>My orders</h2>
-        <p>Keep an eye on your recent orders and their status.</p>
+        <h2>My Orders</h2>
+        <p>Check your recent orders and their status.</p>
       </div>
     </div>
+
     <div id="orders-list" class="orders-list">
       <div class="loading-state">Loading your orders...</div>
     </div>
   </section>
 
+  <!-- PROFILE -->
   <section class="profile-section" id="profile">
     <div class="profile-card">
       <div class="profile-heading">
         <div class="avatar" id="profile-avatar">U</div>
+
         <div>
           <span class="eyebrow">YOUR ACCOUNT</span>
-          <h2>My profile</h2>
-          <p>Your account details in one simple place.</p>
+          <h2>My Profile</h2>
+          <p>Your account details.</p>
         </div>
       </div>
 
       <div class="profile-details" id="profile-details">
-        <div class="profile-detail"><small>Full name</small><strong id="profile-name">Loading...</strong></div>
-        <div class="profile-detail"><small>Username</small><strong id="profile-username">—</strong></div>
-        <div class="profile-detail"><small>Phone number</small><strong id="profile-phone">—</strong></div>
-        <div class="profile-detail"><small>Delivery address</small><strong id="profile-address">—</strong></div>
+        <div class="profile-detail">
+          <small>Full name</small>
+          <strong id="profile-name">Loading...</strong>
+        </div>
+
+        <div class="profile-detail">
+          <small>Username</small>
+          <strong id="profile-username">—</strong>
+        </div>
+
+        <div class="profile-detail">
+          <small>Phone number</small>
+          <strong id="profile-phone">—</strong>
+        </div>
+
+        <div class="profile-detail">
+          <small>Delivery address</small>
+          <strong id="profile-address">—</strong>
+        </div>
       </div>
 
-      <p class="profile-footnote">Need to change your details? Please contact the dairy owner.</p>
+      <p class="profile-footnote">
+        To change your account details, please contact the dairy owner.
+      </p>
     </div>
   </section>
+
 </main>
 
+<!-- FOOTER -->
 <footer class="site-footer">
-  <a class="footer-brand" href="#home">Vigyan Dairy Products</a>
+  <a class="footer-brand" href="#home">
+    Vigyan Dairy Products
+  </a>
+
   <p>Fresh dairy, simple choices, everyday goodness.</p>
-  <small>© <span id="year"></span> Vigyan Dairy Products. All rights reserved.</small>
+
+  <small>
+    © <span id="year"></span> Vigyan Dairy Products.
+    All rights reserved.
+  </small>
 </footer>
 
+<!-- CART BAR -->
 <div class="order-bar">
   <div class="order-bar-inner">
     <div class="cart-summary">
       <span class="cart-icon">🧺</span>
+
       <div>
-        <strong id="count">No items selected</strong>
+        <strong id="count">Your basket is empty</strong>
         <small>Review your selection before ordering</small>
       </div>
     </div>
 
-    <textarea id="note" aria-label="Order note" placeholder="Add a note for the owner (optional)"></textarea>
+    <textarea
+      id="note"
+      aria-label="Order note"
+      placeholder="Add a note for the owner (optional)"></textarea>
+
     <button class="btn place-order-btn" id="place" disabled>
-      Place order <span aria-hidden="true">→</span>
+      Place order →
     </button>
   </div>
 </div>
 
 <script src="app.js"></script>
+
 <script>
   requireRole('user');
 
   const $ = id => document.getElementById(id);
+
   const cart = {};
   let products = [];
 
+  /*
+    PRODUCT IMAGE MAPPING
+
+    Product names are normalized before matching.
+    Spaces, hyphens, capital letters and spelling variations
+    will not prevent image matching.
+  */
+
   const productPhotos = {
-    'fresh milk': 'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=700&q=80',
-    'milk': 'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=700&q=80',
-    'curd': 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=700&q=80',
-    'paneer': 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=700&q=80',
-    'butter': 'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&w=700&q=80',
-    'ghee': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=700&q=80',
-    'cheese': 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=700&q=80',
-    'buttermilk': 'https://images.unsplash.com/photo-1513558161293-cdaf765edfd47?auto=format&fit=crop&w=700&q=80',
-    'cream': 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=700&q=80',
-    'lassi': 'https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=700&q=80'
+    milk: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=700&q=80',
+    freshmilk: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=700&q=80',
+
+    tea: 'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?auto=format&fit=crop&w=700&q=80',
+    coffee: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=700&q=80',
+
+    paneer: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=700&q=80',
+
+    masaladhudh: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=700&q=80',
+    masaladoodh: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=700&q=80',
+
+    lassi: 'https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=700&q=80',
+    coldcoffee: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=700&q=80',
+
+    curd: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=700&q=80',
+    yogurt: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=700&q=80',
+
+    buttermilk: 'https://www.indianhealthyrecipes.com/wp-content/uploads/2022/04/masala-chaas.jpg',
+    butterMilk: 'https://www.indianhealthyrecipes.com/wp-content/uploads/2022/04/masala-chaas.jpg',
+    chaas: 'https://www.indianhealthyrecipes.com/wp-content/uploads/2022/04/masala-chaas.jpg',
+    mattha: 'https://www.indianhealthyrecipes.com/wp-content/uploads/2022/04/masala-chaas.jpg',
+
+    candy: 'https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?auto=format&fit=crop&w=700&q=80',
+
+    icecream: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=700&q=80',
+
+    cupcake: 'https://images.unsplash.com/photo-1486427944299-d1955d23e34d?auto=format&fit=crop&w=700&q=80',
+
+    gulabjamun: 'https://www.indianhealthyrecipes.com/wp-content/uploads/2021/10/gulab-jamun.jpg',
+    gulabjam: 'https://www.indianhealthyrecipes.com/wp-content/uploads/2021/10/gulab-jamun.jpg',
+    gulaabjam: 'https://www.indianhealthyrecipes.com/wp-content/uploads/2021/10/gulab-jamun.jpg',
+
+    peda: 'https://www.murarisweets.com/cdn/shop/files/SplPeda3.png?v=1709530499&width=1946',
+    pedha: 'https://www.murarisweets.com/cdn/shop/files/SplPeda3.png?v=1709530499&width=1946',
+
+    kalakand: 'https://www.indiaathome.com.au/cdn/shop/articles/kalakand_1170x.jpg?v=1671019777',
+
+    basundi: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=700&q=80',
+
+    chenna: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=700&q=80',
+
+    kulfi: 'https://images.unsplash.com/photo-1560008581-09826d1de69e?auto=format&fit=crop&w=700&q=80',
+
+    milkshake: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=700&q=80',
+
+    cheese: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=700&q=80',
+
+    ghee: 'https://www.indianhealthyrecipes.com/wp-content/uploads/2022/08/ghee-recipe.jpg',
+    cowghee: 'https://www.indianhealthyrecipes.com/wp-content/uploads/2022/08/ghee-recipe.jpg',
+    desighee: 'https://www.indianhealthyrecipes.com/wp-content/uploads/2022/08/ghee-recipe.jpg',
+
+    cream: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=700&q=80'
   };
 
-  function photoFor(name) {
-    const key = String(name || '').toLowerCase().trim();
-    return productPhotos[key] || productPhotos['fresh milk'];
+  // Convert product names to a consistent key.
+  function normalizeProductName(name) {
+    return String(name || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
   }
 
+  // Find the correct image for each product.
+  function photoFor(name) {
+    const key = normalizeProductName(name);
+
+    // First try exact matching.
+    if (productPhotos[key]) {
+      return productPhotos[key];
+    }
+
+    // Then try common product-name variations.
+    if (key.includes('gulab') || key.includes('gulaab')) {
+      return productPhotos.gulabjamun;
+    }
+
+    if (key.includes('buttermilk') || key.includes('chaas') || key.includes('mattha')) {
+      return productPhotos.buttermilk;
+    }
+
+    if (key.includes('ghee')) {
+      return productPhotos.ghee;
+    }
+
+    if (key.includes('cupcake')) {
+      return productPhotos.cupcake;
+    }
+
+    if (key.includes('cheese')) {
+      return productPhotos.cheese;
+    }
+
+    if (key.includes('cream')) {
+      return productPhotos.cream;
+    }
+
+    if (key.includes('kalakand')) {
+      return productPhotos.kalakand;
+    }
+
+    if (key.includes('pedha') || key.includes('peda')) {
+      return productPhotos.peda;
+    }
+
+    if (key.includes('icecream')) {
+      return productPhotos.icecream;
+    }
+
+    if (key.includes('milkshake')) {
+      return productPhotos.milkshake;
+    }
+
+    if (key.includes('lassi')) {
+      return productPhotos.lassi;
+    }
+
+    if (key.includes('paneer')) {
+      return productPhotos.paneer;
+    }
+
+    if (key.includes('curd') || key.includes('yogurt')) {
+      return productPhotos.curd;
+    }
+
+    if (key.includes('coffee')) {
+      return productPhotos.coffee;
+    }
+
+    if (key.includes('milk')) {
+      return productPhotos.milk;
+    }
+
+    return '';
+  }
+
+  // Render all products.
   function renderProducts() {
-    $('products').innerHTML = products.map(product => `
-      <article class="product-card ${cart[product.id] ? 'selected' : ''}">
-        <div class="product-image-wrap">
-          <img
-            src="${photoFor(product.name)}"
-            alt="${esc(product.name)}"
-            loading="lazy"
-            onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">
+    $('products').innerHTML = products.map((p, index) => {
+      const image = photoFor(p.name);
+      const emoji = p.emoji || '🥛';
 
-          <div class="product-image-fallback" aria-hidden="true">
-            ${esc(product.emoji || '🥛')}
+      return `
+        <article class="product-card ${cart[p.id] ? 'selected' : ''}">
+          <div class="product-image-wrap">
+
+            <span class="product-number">
+              ${String(index + 1).padStart(2, '0')}
+            </span>
+
+            ${
+              image
+                ? `<img
+                    src="${image}"
+                    alt="${esc(p.name)}"
+                    loading="lazy"
+                    onerror="
+                      this.onerror=null;
+                      this.style.display='none';
+                      this.nextElementSibling.style.display='grid';
+                    ">`
+                : ''
+            }
+
+            <div
+              class="product-image-fallback"
+              style="${image ? '' : 'display:grid;'}"
+              aria-hidden="true">
+              ${esc(emoji)}
+            </div>
+
+            ${cart[p.id] ? `
+              <span class="selected-tag">In your basket</span>
+            ` : ''}
           </div>
 
-          ${cart[product.id] ? '<span class="selected-tag">In your basket</span>' : ''}
-        </div>
+          <div class="product-card-body">
+            <div class="product-title-row">
+              <h3>${esc(p.name)}</h3>
+              <span class="product-emoji">${esc(emoji)}</span>
+            </div>
 
-        <div class="product-card-body">
-          <div class="product-title-row">
-            <h3>${esc(product.name)}</h3>
-            <span class="product-emoji">${esc(product.emoji || '🥛')}</span>
-          </div>
+            <p class="product-unit">
+              Unit: ${esc(p.unit || 'Unit')}
+            </p>
 
-          <p class="product-unit">Measured per ${esc(product.unit || 'unit')}</p>
+            <div class="product-card-bottom">
+              <span class="fresh-label">
+                <span></span>
+                Available
+              </span>
 
-          <div class="product-card-bottom">
-            <span class="fresh-label"><span></span> Available</span>
+              <div class="quantity-control">
+                <button
+                  type="button"
+                  aria-label="Decrease ${esc(p.name)} quantity"
+                  onclick="change(${p.id}, -1)">
+                  −
+                </button>
 
-            <div class="quantity-control" aria-label="Quantity for ${esc(product.name)}">
-              <button type="button" aria-label="Decrease ${esc(product.name)} quantity" onclick="change(${product.id},-1)">−</button>
-              <strong>${cart[product.id] || 0}</strong>
-              <button type="button" aria-label="Increase ${esc(product.name)} quantity" onclick="change(${product.id},1)">+</button>
+                <strong>${cart[p.id] || 0}</strong>
+
+                <button
+                  type="button"
+                  aria-label="Increase ${esc(p.name)} quantity"
+                  onclick="change(${p.id}, 1)">
+                  +
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </article>
-    `).join('') || '<div class="empty">No products are available right now. Please check again soon.</div>';
+        </article>
+      `;
+    }).join('') || `
+      <div class="empty">
+        No products are available right now.
+      </div>
+    `;
 
-    const count = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
-    const kinds = Object.keys(cart).length;
-
-    $('count').textContent = count
-      ? `${count} item${count === 1 ? '' : 's'} · ${kinds} product${kinds === 1 ? '' : 's'}`
-      : 'Your basket is empty';
-
-    $('place').disabled = !kinds;
+    updateCartSummary();
   }
 
+  // Update basket quantity.
   function change(id, delta) {
     const quantity = (cart[id] || 0) + delta;
 
@@ -260,6 +520,21 @@
     renderProducts();
   }
 
+  // Update cart information.
+  function updateCartSummary() {
+    const count = Object.values(cart)
+      .reduce((sum, quantity) => sum + quantity, 0);
+
+    const kinds = Object.keys(cart).length;
+
+    $('count').textContent = count
+      ? `${count} items · ${kinds} products`
+      : 'Your basket is empty';
+
+    $('place').disabled = !kinds;
+  }
+
+  // Load customer orders.
   async function loadOrders() {
     try {
       const orders = await api('/orders/mine');
@@ -271,46 +546,79 @@
               <strong>Order #${order.id}</strong>
               <small>${fmtDate(order.created_at)}</small>
             </div>
-            <span class="badge ${esc(order.status)}">${esc(order.status)}</span>
+
+            <span class="badge ${esc(order.status)}">
+              ${esc(order.status)}
+            </span>
           </div>
 
           <div class="order-items">
             ${order.items.map(item => `
-              <span>${esc(item.emoji)} ${esc(item.name)} <b>× ${item.quantity}</b></span>
+              <span>
+                ${esc(item.emoji || '🥛')}
+                ${esc(item.name)}
+                <b>× ${item.quantity}</b>
+              </span>
             `).join('')}
           </div>
 
-          ${order.note ? `<p class="order-note">${esc(order.note)}</p>` : ''}
+          ${order.note ? `
+            <p class="order-note">${esc(order.note)}</p>
+          ` : ''}
         </article>
-      `).join('') || '<div class="empty orders-empty">Your order history will appear here after your first order.</div>';
-
+      `).join('') || `
+        <div class="empty orders-empty">
+          Your order history will appear here after your first order.
+        </div>
+      `;
     } catch (error) {
-      $('orders-list').innerHTML =
-        '<div class="empty">We could not load your orders. Please refresh the page.</div>';
+      $('orders-list').innerHTML = `
+        <div class="empty">
+          Could not load your orders. Please refresh the page.
+        </div>
+      `;
     }
   }
 
+  // Load customer profile.
   async function loadProfile() {
     try {
       const profile = await api('/profile');
-      const name = profile.name || sessionStorage.getItem('name') || 'Customer';
+
+      const name =
+        profile.name ||
+        sessionStorage.getItem('name') ||
+        'Customer';
 
       $('who').textContent = name.split(' ')[0];
-      $('profile-avatar').textContent = name.trim().charAt(0).toUpperCase();
+
+      $('profile-avatar').textContent =
+        name.trim().charAt(0).toUpperCase();
+
       $('profile-name').textContent = name;
-      $('profile-username').textContent = profile.username ? '@' + profile.username : '—';
-      $('profile-phone').textContent = profile.phone || 'Not added';
-      $('profile-address').textContent = profile.address || 'Not added';
+
+      $('profile-username').textContent =
+        profile.username ? '@' + profile.username : '—';
+
+      $('profile-phone').textContent =
+        profile.phone || 'Not added';
+
+      $('profile-address').textContent =
+        profile.address || 'Not added';
 
     } catch (error) {
       const name = sessionStorage.getItem('name') || 'Customer';
 
       $('who').textContent = name.split(' ')[0];
-      $('profile-avatar').textContent = name.trim().charAt(0).toUpperCase();
+
+      $('profile-avatar').textContent =
+        name.trim().charAt(0).toUpperCase();
+
       $('profile-name').textContent = name;
     }
   }
 
+  // Place customer order.
   $('place').onclick = async () => {
     $('place').disabled = true;
 
@@ -322,17 +630,21 @@
             product_id: Number(product_id),
             quantity
           })),
+
           note: $('note').value
         }
       });
 
       Object.keys(cart).forEach(key => delete cart[key]);
+
       $('note').value = '';
 
       toast('Your order has been sent to the owner!');
 
       renderProducts();
+
       await loadOrders();
+
       location.hash = '#orders';
 
     } catch (error) {
@@ -341,11 +653,14 @@
     }
   };
 
+  // Current year.
   $('year').textContent = new Date().getFullYear();
 
+  // Initial page loading.
   (async () => {
     try {
       products = await api('/products');
+
       renderProducts();
 
       await Promise.all([
@@ -356,12 +671,16 @@
       setInterval(loadOrders, 15000);
 
     } catch (error) {
-      $('products').innerHTML =
-        '<div class="empty">Could not load products. Please refresh the page.</div>';
+      $('products').innerHTML = `
+        <div class="empty">
+          Could not load products. Please refresh the page.
+        </div>
+      `;
 
       toast(error.message, true);
     }
   })();
 </script>
+
 </body>
 </html>
